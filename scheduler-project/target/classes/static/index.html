@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Scheduler Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #f4f9ff;
+  --surface:  #ffffff;
+  --border:   #daeaf9;
+  --c:        #3aabf0;
+  --c2:       #1a8fd1;
+  --c3:       #0d6eaa;
+  --cl:       #e8f4fd;
+  --cl2:      #cce7f8;
+  --tx:       #0f2235;
+  --mu:       #6b8fa8;
+  --green:    #2ec4a9;
+  --orange:   #f5a623;
+  --red:      #e05b5b;
+  --shadow:   0 2px 16px rgba(58,171,240,.10);
+  --shadow2:  0 8px 32px rgba(58,171,240,.16);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--tx);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ─────────────────────────────── */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: 220px; height: 100vh;
+  background: var(--surface);
+  border-right: 1.5px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 2rem 1.2rem;
+  z-index: 100;
+}
+
+.logo {
+  display: flex; align-items: center; gap: .7rem;
+  margin-bottom: 2.5rem;
+}
+
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--c), var(--c3));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: #fff; flex-shrink: 0;
+}
+
+.logo-text { font-size: .95rem; font-weight: 700; color: var(--tx); line-height: 1.2; }
+.logo-text span { font-size: .7rem; font-weight: 400; color: var(--mu); display: block; }
+
+.nav-label { font-size: .62rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--mu); margin-bottom: .6rem; padding-left: .5rem; }
+
+.nav-item {
+  display: flex; align-items: center; gap: .65rem;
+  padding: .6rem .75rem; border-radius: 8px;
+  font-size: .85rem; font-weight: 500; color: var(--mu);
+  cursor: pointer; transition: all .15s; margin-bottom: .2rem;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--cl); color: var(--c2); }
+.nav-item.active { background: var(--cl); color: var(--c2); font-weight: 600; }
+.nav-item .ico { font-size: 1rem; width: 20px; text-align: center; }
+
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-left: auto;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .6; transform: scale(.85); }
+}
+
+/* ── Main ────────────────────────────────── */
+.main {
+  margin-left: 220px;
+  padding: 2rem 2.5rem;
+  min-height: 100vh;
+}
+
+/* ── Topbar ──────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.page-title { font-size: 1.45rem; font-weight: 700; color: var(--tx); }
+.page-title span { color: var(--c); }
+.page-sub { font-size: .8rem; color: var(--mu); margin-top: .15rem; }
+
+.btn-refresh {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: var(--c); color: #fff;
+  border: none; border-radius: 9px; padding: .55rem 1.1rem;
+  font-family: inherit; font-size: .82rem; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+  box-shadow: 0 4px 12px rgba(58,171,240,.3);
+}
+.btn-refresh:hover { background: var(--c2); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(58,171,240,.35); }
+.btn-refresh:active { transform: translateY(0); }
+.btn-refresh.spin .ico-r { animation: spin .6s linear; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Stat Cards ──────────────────────────── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; margin-bottom: 2rem; }
+
+.stat-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 1.2rem 1.3rem;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+  transition: transform .15s, box-shadow .15s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow2); }
+
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 4px; height: 100%; border-radius: 0 2px 2px 0;
+}
+.stat-card.blue::before   { background: var(--c); }
+.stat-card.green::before  { background: var(--green); }
+.stat-card.orange::before { background: var(--orange); }
+.stat-card.red::before    { background: var(--red); }
+
+.stat-label { font-size: .68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--mu); margin-bottom: .5rem; }
+.stat-val   { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--tx); }
+.stat-val.blue   { color: var(--c2); }
+.stat-val.green  { color: var(--green); }
+.stat-val.orange { color: var(--orange); }
+.stat-val.red    { color: var(--red); }
+.stat-hint { font-size: .7rem; color: var(--mu); margin-top: .35rem; }
+
+/* ── Grid layout ─────────────────────────── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; margin-bottom: 1.4rem; }
+.full  { grid-column: 1 / -1; }
+
+/* ── Card ────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 1.4rem;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+.card-title { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c2); }
+
+/* ── Table ───────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+thead tr { border-bottom: 2px solid var(--cl2); }
+th { text-align: left; padding: .55rem .75rem; font-size: .65rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--mu); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--cl); }
+td { padding: .65rem .75rem; vertical-align: middle; }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: .2rem .6rem; border-radius: 999px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+}
+.badge.pendiente  { background: #fff8e6; color: #c87f00; }
+.badge.cancelada  { background: #fdf0f0; color: var(--red); }
+.badge.completada { background: #edfaf7; color: #1a9a80; }
+.badge.activa     { background: #edfaf7; color: #1a9a80; }
+.badge.inactiva   { background: #fdf0f0; color: var(--red); }
+
+.id-badge { background: var(--cl); color: var(--c2); border-radius: 6px; padding: .15rem .45rem; font-family: 'DM Mono', monospace; font-size: .72rem; font-weight: 500; }
+
+.precio { color: var(--c2); font-family: 'DM Mono', monospace; font-weight: 600; font-size: .82rem; }
+.token  { color: var(--mu); font-family: 'DM Mono', monospace; font-size: .68rem; }
+
+.empty { text-align: center; padding: 2.5rem; color: var(--mu); font-size: .85rem; }
+.loading::after { content: ''; animation: ldots 1.2s infinite; }
+@keyframes ldots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+/* ── Scheduler status ────────────────────── */
+.task-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1rem; border-radius: 10px;
+  background: var(--cl); margin-bottom: .6rem;
+  border: 1.5px solid var(--border);
+}
+.task-row:last-child { margin-bottom: 0; }
+.task-name { font-size: .83rem; font-weight: 600; color: var(--tx); }
+.task-cron { font-size: .7rem; color: var(--mu); font-family: 'DM Mono', monospace; margin-top: .15rem; }
+.task-info { flex: 1; padding: 0 1rem; }
+.task-badge {
+  font-size: .68rem; font-weight: 700; padding: .25rem .7rem;
+  border-radius: 999px; background: #edfaf7; color: #1a9a80;
+  display: flex; align-items: center; gap: .3rem;
+}
+
+/* ── Log ─────────────────────────────────── */
+.log-box {
+  background: #0f2235; border-radius: 10px;
+  padding: 1rem 1.1rem; font-family: 'DM Mono', monospace;
+  font-size: .72rem; color: #7ecef5; line-height: 1.8;
+  max-height: 200px; overflow-y: auto;
+  border: 1.5px solid #1a3a55;
+}
+.log-box .ok   { color: #2ec4a9; }
+.log-box .warn { color: var(--orange); }
+.log-box .time { color: #4a7a9b; }
+.log-box .num  { color: #f5a623; font-weight: 600; }
+
+/* ── Toast ───────────────────────────────── */
+#toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--c); color: #fff;
+  padding: .65rem 1.1rem; border-radius: 10px;
+  font-size: .82rem; font-weight: 600;
+  opacity: 0; transform: translateY(8px);
+  transition: all .25s; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(58,171,240,.35);
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.err  { background: var(--red); }
+
+/* ── Responsive ──────────────────────────── */
+@media(max-width:900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 1.2rem; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+}
+@media(max-width:500px) {
+  .stats { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">⏱</div>
+    <div class="logo-text">Scheduler<span>Spring Boot · H2</span></div>
+  </div>
+
+  <div class="nav-label">Menú</div>
+  <button class="nav-item active" onclick="showSection('dashboard')">
+    <span class="ico">📊</span> Dashboard
+    <span class="status-dot"></span>
+  </button>
+  <button class="nav-item" onclick="showSection('ordenes')">
+    <span class="ico">📦</span> Órdenes
+  </button>
+  <button class="nav-item" onclick="showSection('sesiones')">
+    <span class="ico">🔐</span> Sesiones
+  </button>
+  <button class="nav-item" onclick="showSection('tareas')">
+    <span class="ico">⚙️</span> Tareas
+  </button>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Scheduler <span>Dashboard</span></div>
+      <div class="page-sub">Monitoreo en tiempo real · Spring Boot + H2</div>
+    </div>
+    <button class="btn-refresh" id="btn-ref" onclick="recargarTodo()">
+      <span class="ico-r">↻</span> Actualizar
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-card blue">
+      <div class="stat-label">Total Órdenes</div>
+      <div class="stat-val blue" id="s-total">—</div>
+      <div class="stat-hint">en base de datos</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Pendientes</div>
+      <div class="stat-val orange" id="s-pend">—</div>
+      <div class="stat-hint">esperando acción</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Canceladas</div>
+      <div class="stat-val red" id="s-canc">—</div>
+      <div class="stat-hint">por inactividad</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Sesiones</div>
+      <div class="stat-val green" id="s-ses">—</div>
+      <div class="stat-hint">en total</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="sec-dashboard">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">⏱ Tareas Activas</div>
+        </div>
+        <div class="task-row">
+          <div>
+            <div class="task-name">🧹 Limpieza de Sesiones</div>
+            <div class="task-cron">cron: 0 */2 * * * *</div>
+          </div>
+          <div class="task-info"></div>
+          <div class="task-badge">● ACTIVA</div>
+        </div>
+        <div class="task-row">
+          <div>
+            <div class="task-name">📦 Cancelar Órdenes</div>
+            <div class="task-cron">cron: 0 */1 * * * *</div>
+          </div>
+          <div class="task-info"></div>
+          <div class="task-badge">● ACTIVA</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">🖥 Log de Consola</div>
+        </div>
+        <div class="log-box" id="log-box">
+          <span class="time">[--:--:--]</span> Esperando conexión con la API<span class="loading"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card full">
+      <div class="card-head">
+        <div class="card-title">📦 Órdenes Recientes</div>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Última Act.</th></tr></thead>
+        <tbody id="tb-ord-dash"><tr><td colspan="6" class="empty loading">Cargando</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ORDENES -->
+  <div id="sec-ordenes" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📦 Todas las Órdenes</div>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Creado</th><th>Última Act.</th></tr></thead>
+        <tbody id="tb-ord"><tr><td colspan="7" class="empty loading">Cargando</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SESIONES -->
+  <div id="sec-sesiones" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🔐 Sesiones de Usuario</div>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Usuario</th><th>Token</th><th>Creado</th><th>Expira</th><th>Estado</th></tr></thead>
+        <tbody id="tb-ses"><tr><td colspan="6" class="empty loading">Cargando</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAREAS -->
+  <div id="sec-tareas" style="display:none">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">🧹 Limpieza de Sesiones</div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Expresión CRON</div>
+          <div class="task-cron">0 */2 * * * *  →  cada 2 minutos</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Modo de ejecución</div>
+          <div class="task-cron">@Scheduled(cron) — externalizado en application.properties</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Acción</div>
+          <div class="task-cron">Desactiva sesiones expiradas → Elimina las inactivas</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Hilo asignado</div>
+          <div class="task-cron">scheduler-task-1  (ThreadPoolTaskScheduler)</div>
+        </div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">📦 Cancelación de Órdenes</div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Expresión CRON</div>
+          <div class="task-cron">0 */1 * * * *  →  cada 1 minuto</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Modo de ejecución</div>
+          <div class="task-cron">@Scheduled(cron) — externalizado en application.properties</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Acción</div>
+          <div class="task-cron">PENDIENTE → CANCELADA si inactividad ≥ 2 min (demo)</div>
+        </div></div>
+        <div class="task-row"><div>
+          <div class="task-name">Hilo asignado</div>
+          <div class="task-cron">scheduler-task-2  (ThreadPoolTaskScheduler)</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:8080/api';
+const $   = id => document.getElementById(id);
+
+function toast(msg, err = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className   = 'show' + (err ? ' err' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 3000);
+}
+
+function fmt(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('es-SV', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function badgeOrden(s) {
+  const map = { PENDIENTE:'pendiente', CANCELADA:'cancelada', COMPLETADA:'completada' };
+  return `<span class="badge ${map[s]||''}">${s}</span>`;
+}
+
+function rowOrden(p, cols7 = false) {
+  const base = `
+    <td><span class="id-badge">#${p.id}</span></td>
+    <td>${p.clienteNombre}</td>
+    <td>${p.producto}</td>
+    <td><span class="precio">$${parseFloat(p.total).toFixed(2)}</span></td>
+    <td>${badgeOrden(p.status)}</td>`;
+  const extra = cols7 ? `<td style="font-size:.72rem;color:var(--mu)">${fmt(p.creadoEn)}</td>` : '';
+  return `<tr>${base}${extra}<td style="font-size:.72rem;color:var(--mu)">${fmt(p.ultimaActualizacion)}</td></tr>`;
+}
+
+function rowSesion(s) {
+  const activa = s.activa;
+  return `<tr>
+    <td><span class="id-badge">#${s.id}</span></td>
+    <td>${s.username}</td>
+    <td><span class="token">${s.token.substring(0,18)}…</span></td>
+    <td style="font-size:.72rem;color:var(--mu)">${fmt(s.creadoEn)}</td>
+    <td style="font-size:.72rem;color:var(--mu)">${fmt(s.expiraEn)}</td>
+    <td><span class="badge ${activa ? 'activa' : 'inactiva'}">${activa ? 'ACTIVA' : 'INACTIVA'}</span></td>
+  </tr>`;
+}
+
+function addLog(msg, type = '') {
+  const box  = $('log-box');
+  const now  = new Date().toLocaleTimeString('es-SV');
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="time">[${now}]</span> <span class="${type}">${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function cargarEstado() {
+  try {
+    const d = await (await fetch(`${API}/estado`)).json();
+    $('s-total').textContent = d.ordenes_total    ?? '—';
+    $('s-pend' ).textContent = d.ordenes_pendiente ?? '—';
+    $('s-canc' ).textContent = d.ordenes_cancelada ?? '—';
+    $('s-ses'  ).textContent = d.sesiones_total    ?? '—';
+    addLog(`Estado cargado — Órdenes: <span class="num">${d.ordenes_total}</span> | Pendientes: <span class="num">${d.ordenes_pendiente}</span>`, 'ok');
+  } catch {
+    addLog('No se pudo conectar con http://localhost:8080', 'warn');
+  }
+}
+
+async function cargarOrdenes() {
+  try {
+    const d = await (await fetch(`${API}/ordenes`)).json();
+    const rows = d.length ? d.map(p => rowOrden(p, false)).join('') : '<tr><td colspan="6" class="empty">Sin órdenes</td></tr>';
+    $('tb-ord-dash').innerHTML = rows;
+
+    const rows7 = d.length ? d.map(p => rowOrden(p, true)).join('') : '<tr><td colspan="7" class="empty">Sin órdenes</td></tr>';
+    $('tb-ord').innerHTML = rows7;
+
+    addLog(`Órdenes cargadas: <span class="num">${d.length}</span>`, 'ok');
+    toast('✓ Órdenes actualizadas');
+  } catch {
+    $('tb-ord-dash').innerHTML = '<tr><td colspan="6" class="empty">Sin conexión con la API</td></tr>';
+    $('tb-ord').innerHTML      = '<tr><td colspan="7" class="empty">Sin conexión con la API</td></tr>';
+    addLog('Error al cargar órdenes — ¿está corriendo Spring Boot?', 'warn');
+    toast('Sin conexión con localhost:8080', true);
+  }
+}
+
+async function cargarSesiones() {
+  try {
+    const d = await (await fetch(`${API}/sesiones`)).json();
+    $('tb-ses').innerHTML = d.length ? d.map(rowSesion).join('') : '<tr><td colspan="6" class="empty">Sin sesiones</td></tr>';
+    addLog(`Sesiones cargadas: <span class="num">${d.length}</span>`, 'ok');
+  } catch {
+    $('tb-ses').innerHTML = '<tr><td colspan="6" class="empty">Sin conexión con la API</td></tr>';
+  }
+}
+
+function recargarTodo() {
+  const btn = $('btn-ref');
+  btn.classList.add('spin');
+  setTimeout(() => btn.classList.remove('spin'), 700);
+  cargarEstado();
+  cargarOrdenes();
+  cargarSesiones();
+}
+
+function showSection(name) {
+  ['dashboard','ordenes','sesiones','tareas'].forEach(s => {
+    $('sec-' + s).style.display = s === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('active', ['dashboard','ordenes','sesiones','tareas'][i] === name);
+  });
+}
+
+// Auto-refresh cada 30 segundos
+setInterval(recargarTodo, 30000);
+
+// Inicial
+$('log-box').innerHTML = '';
+addLog('Dashboard iniciado — conectando con la API…');
+recargarTodo();
+</script>
+</body>
+</html>
